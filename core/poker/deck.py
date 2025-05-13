@@ -1,7 +1,9 @@
-from .card import Suit, Rank, Card
+from treys import Card
 from typing import List
 from random import Random
-import random
+
+STR_RANKS: str = '23456789TJQKA'
+STR_SUITS: str = 'shdc'
 
 class Deck:
     """
@@ -13,9 +15,9 @@ class Deck:
         self.cards: List[Card] = []
         
         # Initialize standard 52 cards
-        for suit in Suit:
-            for rank in Rank:
-                self.cards.append(Card(rank, suit))
+        for rank in STR_RANKS:
+            for suit in STR_SUITS:
+                self.cards.append(Card.new(rank + suit))
     
     def shuffle(self) -> None:
         self._random.shuffle(self.cards)
@@ -30,4 +32,4 @@ class Deck:
         self.__init__()
 
     def __str__(self) -> str:
-        return f"{[str(self.cards[i]) for i in range(len(self.cards))]}"
+        return Card.ints_to_pretty_str(self.cards)
