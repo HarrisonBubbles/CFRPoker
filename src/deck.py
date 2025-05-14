@@ -11,6 +11,7 @@ class Deck:
     """
     
     def __init__(self, seed: int = None):
+        self.seed = seed
         self._random = Random(seed)
         self.cards: List[Card] = []
         
@@ -29,7 +30,7 @@ class Deck:
         return cards
     
     def reset(self) -> None:
-        self.__init__()
+        self.__init__(seed=self.seed)
 
     def __str__(self) -> str:
         return Card.ints_to_pretty_str(self.cards)

@@ -7,26 +7,29 @@ class Infoset:
     """
     Represents an infoset (node in game tree) in my simplifed poker game.
     """
-    def __init__(self, num_actions):
+    def __init__(self, num_actions, valid_action_indices):
         self.regret_sum = np.zeros(num_actions)
         self.strategy = np.zeros(num_actions)
         self.strategy_sum = np.zeros(num_actions)
         self.num_actions = num_actions
+        self.num_valid_actions = len(valid_action_indices)
+        self.valid_action_indices = valid_action_indices
+        self.visited_count = 0
         
     def get_strategy(self):
         normalizing_sum = 0
-        for a in range(self.num_actions):
+        for a in self.valid_action_indices:
             if self.regret_sum[a] > 0:
                 self.strategy[a] = self.regret_sum[a]
             else:
                 self.strategy[a] = 0
             normalizing_sum += self.strategy[a]
         
-        for a in range(self.num_actions):
+        for a in self.valid_action_indices:
             if normalizing_sum > 0:
                 self.strategy[a] /= normalizing_sum
             else:
-                self.strategy[a] = 1.0 / self.num_actions
+                self.strategy[a] = 1.0 / self.num_valid_actions
         
         return self.strategy
     
@@ -34,45 +37,42 @@ class Infoset:
         avg_strategy = np.zeros(self.num_actions)
         normalizing_sum = 0
         
-        for a in range(self.num_actions):
+        for a in self.valid_action_indices:
             normalizing_sum += self.strategy_sum[a]
         
-        for a in range(self.num_actions):
+        for a in self.valid_action_indices:
             if normalizing_sum > 0:
                 avg_strategy[a] = self.strategy_sum[a] / normalizing_sum
             else:
-                avg_strategy[a] = 1.0 / self.num_actions
+                avg_strategy[a] = 1.0 / self.num_valid_actions
         
         return avg_strategy
+
+    def increment_visited_count(self):
+        self.visited_count += 1
 
 
 class MCCFR:
     """
     Handles the Monte Carlo Counterfactual Regret Minimization (MCCFR) algorithm logic
     """
-    def __init__(self, game_class):
+    def __init__(self, game_class, num_actions: int):
         self.game_class = game_class
-        self.action_map = {
-            PlayerAction.FOLD: 0,
-            PlayerAction.CHECK: 1,
-            PlayerAction.CALL: 2,
-            PlayerAction.RAISE: 3
-        }
-        self.num_actions = 4
+        self.num_actions = num_actions
         self.nodes = {}
 
     def _sorted_cards(self, cards):
-        return Card.ints_to_pretty_str(list(sorted(cards)))
+        return "".join([Card.int_to_str(c) for c in list(sorted(cards))])
 
     def get_infoset_key(self, hand, community_cards, history):
         hand_str = self._sorted_cards(hand)
         comm_str = self._sorted_cards(community_cards)
-        bet_str = ','.join(map(str, history))
+        bet_str = ','.join(map(lambda x: list(PlayerAction)[x].name, history))
         return f"{hand_str}|{comm_str}|{bet_str}"
 
-    def get_infoset(self, infoset_key) -> Infoset:
+    def get_infoset(self, infoset_key, valid_action_indices) -> Infoset:
         if infoset_key not in self.nodes:
-            self.nodes[infoset_key] = Infoset(self.num_actions)
+            self.nodes[infoset_key] = Infoset(self.num_actions, valid_action_indices)
         return self.nodes[infoset_key]
     
     def train(self, iterations=1000):
@@ -88,8 +88,10 @@ class MCCFR:
                 game.setup()
                 util[traversing_player] += self.external_cfr(game, [], traversing_player)
         
-        print("MCCFR training complete!")
+        print("Training complete!")
         print(f"Average game value: {util[0]/iterations}")
+        for i in sorted(self.nodes):
+            print(i, self.nodes[i].get_average_strategy(), self.nodes[i].visited_count)
     
     def external_cfr(self, game, history, traversing_player):
         plays = len(history)
@@ -101,11 +103,12 @@ class MCCFR:
             return game.get_terminal_utility(history)
         
         valid_actions = game.valid_actions(history)
-        valid_action_indices = [self.action_map[action] for action in valid_actions]
+        valid_action_indices = [action.value for action in valid_actions]
 
         infoset_key = self.get_infoset_key(acting_player_cards, game.community_cards, history)
-        infoset = self.get_infoset(infoset_key)
+        infoset = self.get_infoset(infoset_key, valid_action_indices)
 
+        infoset.increment_visited_count()
         strategy = infoset.get_strategy()
 
         if acting_player == traversing_player:
@@ -129,7 +132,7 @@ class MCCFR:
             
             util = self.external_cfr(game, next_history, traversing_player)
             
-            for a in range(self.num_actions):
+            for a in valid_action_indices:
                 infoset.strategy_sum[a] += strategy[a]
             
             return util

@@ -3,10 +3,10 @@ from abc import ABC, abstractmethod
 import random
 
 class PlayerAction(Enum):
-    FOLD = 1
-    CHECK = 2
-    CALL = 3
-    RAISE = 4
+    FOLD = 0
+    CHECK = 1
+    CALL = 2
+    RAISE = 3
 
 
 class Player(ABC):

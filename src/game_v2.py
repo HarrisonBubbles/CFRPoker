@@ -13,12 +13,6 @@ class SimpleGame:
         self.community_cards = community_cards
         self.final_cards = final_cards
         self.evaluator = Evaluator()
-        self.action_map = {
-            PlayerAction.FOLD: 0,
-            PlayerAction.CHECK: 1,
-            PlayerAction.CALL: 2,
-            PlayerAction.RAISE: 3
-        }
 
     def is_terminal(self, history):
         """
@@ -27,9 +21,9 @@ class SimpleGame:
         if len(history) < 2:
             return False
 
-        both_checked = history[-1] == 1 and history[-2] == 1 
-        raised_and_called = 2 in history
-        folded = 0 in history
+        both_checked = history[-1] == PlayerAction.CHECK.value and history[-2] == PlayerAction.CHECK.value
+        raised_and_called = PlayerAction.CALL.value in history
+        folded = PlayerAction.FOLD.value in history
         return both_checked or raised_and_called or folded
 
     def get_terminal_utility(self, history):
@@ -39,27 +33,27 @@ class SimpleGame:
         if not self.is_terminal(history):
             raise RuntimeError("Current game is not at a terminal state!")
         
-        if 0 in history:
-            if history.index(0) % 2 == 0:
+        if PlayerAction.FOLD.value in history:
+            if history.index(PlayerAction.FOLD.value) % 2 == 0:
                 return -1
             else:
                 return 1
         
-        raised = 1 if 3 in history else 0
+        raised = 1 if PlayerAction.RAISE.value in history else 0
         return self.showdown() * (1 + raised)
     
     def setup(self):
         self.deck.reset()
         self.deck.shuffle()
-        self.player1_cards = self.deck.draw(2)
-        self.player2_cards = self.deck.draw(2)
-        self.community_cards = self.deck.draw(2)
-        self.final_cards = self.deck.draw(3)
+        self.player1_cards = self.deck.draw(1)
+        self.player2_cards = self.deck.draw(1)
+        self.community_cards = self.deck.draw(1)
+        self.final_cards = self.deck.draw(4)
 
     def valid_actions(self, history):
         actions = []
     
-        if 3 not in history:
+        if PlayerAction.RAISE.value not in history:
             actions.append(PlayerAction.CHECK)
             actions.append(PlayerAction.RAISE)
         else:
