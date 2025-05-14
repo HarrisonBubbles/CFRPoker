@@ -242,7 +242,6 @@ class PokerGame:
         else:
             print(f"Final chips - Player 1: ${self.player1.chips} | Player 2: ${self.player2.chips}")
 
-
     def render_header(self, stage) -> str:
         print("\n" + "=" * 50)
         print(f"{stage} starting. Player 1: ${self.player1.chips} | Player 2: ${self.player2.chips}")
