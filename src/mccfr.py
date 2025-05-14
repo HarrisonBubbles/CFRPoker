@@ -1,5 +1,6 @@
 import numpy as np
 import random
+from treys import Card
 from .player import PlayerAction
 
 class Infoset:
@@ -60,9 +61,12 @@ class MCCFR:
         self.num_actions = 4
         self.nodes = {}
 
+    def _sorted_cards(self, cards):
+        return Card.ints_to_pretty_str(list(sorted(cards)))
+
     def get_infoset_key(self, hand, community_cards, history):
-        hand_str = ','.join(map(str, sorted(hand)))
-        comm_str = ','.join(map(str, sorted(community_cards)))
+        hand_str = self._sorted_cards(hand)
+        comm_str = self._sorted_cards(community_cards)
         bet_str = ','.join(map(str, history))
         return f"{hand_str}|{comm_str}|{bet_str}"
 
@@ -94,7 +98,6 @@ class MCCFR:
 
         # Terminal node check
         if game.is_terminal(history):
-            print('here')
             return game.get_terminal_utility(history)
         
         valid_actions = game.valid_actions(history)

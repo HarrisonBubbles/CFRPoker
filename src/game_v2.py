@@ -59,7 +59,7 @@ class SimpleGame:
     def valid_actions(self, history):
         actions = []
     
-        if PlayerAction.RAISE not in history:
+        if 3 not in history:
             actions.append(PlayerAction.CHECK)
             actions.append(PlayerAction.RAISE)
         else:
