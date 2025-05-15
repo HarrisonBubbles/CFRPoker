@@ -1,7 +1,5 @@
 import numpy as np
 import random
-from treys import Card
-from .player import PlayerAction
 
 class Infoset:
     """
@@ -61,15 +59,6 @@ class MCCFR:
         self.num_actions = num_actions
         self.nodes = {}
 
-    def _sorted_cards(self, cards):
-        return "".join([Card.int_to_str(c) for c in list(sorted(cards))])
-
-    def get_infoset_key(self, hand, community_cards, history):
-        hand_str = self._sorted_cards(hand)
-        comm_str = self._sorted_cards(community_cards)
-        bet_str = ','.join(map(lambda x: list(PlayerAction)[x].name, history))
-        return f"{hand_str}|{comm_str}|{bet_str}"
-
     def get_infoset(self, infoset_key, valid_action_indices) -> Infoset:
         if infoset_key not in self.nodes:
             self.nodes[infoset_key] = Infoset(self.num_actions, valid_action_indices)
@@ -96,16 +85,16 @@ class MCCFR:
     def external_cfr(self, game, history, traversing_player):
         plays = len(history)
         acting_player = plays % 2
-        acting_player_cards = game.player1_cards if acting_player == 0 else game.player2_cards
 
         # Terminal node check
         if game.is_terminal(history):
-            return game.get_terminal_utility(history)
+            mult = 1 if acting_player == traversing_player else -1
+            return game.get_terminal_utility(history, acting_player) * mult
         
         valid_actions = game.valid_actions(history)
         valid_action_indices = [action.value for action in valid_actions]
 
-        infoset_key = self.get_infoset_key(acting_player_cards, game.community_cards, history)
+        infoset_key = game.get_infoset_key(acting_player, history)
         infoset = self.get_infoset(infoset_key, valid_action_indices)
 
         infoset.increment_visited_count()
@@ -127,7 +116,7 @@ class MCCFR:
             
             return infoset_util
         else: #acting_player != traversing_player
-            action_idx = self.sample_action(strategy, valid_action_indices)
+            action_idx = self.sample_action(strategy)
             next_history = history + [action_idx]
             
             util = self.external_cfr(game, next_history, traversing_player)
@@ -137,14 +126,5 @@ class MCCFR:
             
             return util
     
-    def sample_action(self, strategy, valid_action_indices):
-        r = random.random()
-        cumulative_prob = 0
-        
-        for a in valid_action_indices:
-            cumulative_prob += strategy[a]
-            if r < cumulative_prob:
-                return a
-        
-        # if all action probabilities are 0, just choose uniformly
-        return random.choice(valid_action_indices)
+    def sample_action(self, strategy):
+        return random.choices([i for i in range(self.num_actions)], weights = strategy, k = 1)[0]
