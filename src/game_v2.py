@@ -143,6 +143,100 @@ class PocketPoker(SimpleGame):
             return -1 if acting_player == 0 else 1
         else:
             return 0
+        
+    def handle_action(self, player: Player, action, verbose=True):
+        if action == 1:
+            if verbose:
+                print(f"{player.name} checks.")
+        
+        elif action == 2:
+            player.current_bet = 1
+            if verbose:
+                print(f"{player.name} calls $1.")
+        
+        elif action == 0:
+            player.fold()
+            if verbose:
+                print(f"{player.name} folds.")
+        
+        elif action == 3:
+            player.current_bet = 1
+            self.raised = True
+            if verbose:
+                print(f"{player.name} raises by $1.")
+    
+    def betting_round(self, player1: Player, player2: Player, verbose=True):
+        history = []
+        current_player = player1
+        current_player_id = 0
+        players_acted = 0
+        self.raised = False
+        
+        while players_acted < 2:
+            valid_actions = self.valid_actions(history)
+            action = current_player.best_move(self.get_infoset_key(current_player_id, history), valid_actions)
+            self.handle_action(current_player, action, verbose)
+            history.append(action)
+            
+            if player1.folded or player2.folded:
+                break
+            
+            if player1.current_bet == player2.current_bet:
+                players_acted += 1
+            else: # someone raised
+                players_acted = 1
+            
+            current_player = player2 if current_player == player1 else player1
+            current_player_id = 0 if current_player == player1 else 1
+        
+        return history
+        
+    def play_round(self, player1: Player, player2: Player, round: int, verbose=True):
+        if verbose:
+            print("\n" + "=" * 50)
+            print(f"Round {round} starting. P1: ${player1.chips} | P2: ${player2.chips}")
+            print("=" * 50)
+
+        self.setup()
+        player1.new_round()
+        player2.new_round()
+        player1.set_hand = self.player1_cards
+        player2.set_hand = self.player2_cards
+
+        if verbose:
+            print(f"Community Cards: {Card.ints_to_pretty_str(self.community_cards)}")
+            print(f"P1 Cards: {Card.ints_to_pretty_str(self.player1_cards)}")
+
+        history = self.betting_round(player1, player2, verbose)
+
+        if verbose:
+            print(f"\nP2 Cards: {Card.ints_to_pretty_str(self.player2_cards)}")
+
+        final_score = self.get_terminal_utility(history, 0)
+
+        if verbose:
+            if final_score > 0:
+                print(f"P1 wins ${final_score}.")
+            elif final_score < 0:
+                print(f"P2 wins ${-final_score}.")
+            else:
+                print(f"Players tie.")
+        
+        player1.edit_chips(final_score)
+        player2.edit_chips(-final_score)
+
+        
+    def play_game(self, player1: Player, player2: Player, rounds: int = 10, verbose=True):
+        for i in range(rounds):
+            if player1.chips <= 0 or player2.chips <= 0:
+                break
+
+            self.play_round(player1, player2, i+1, verbose)
+
+        if verbose:
+            print(f"Game over. P1 final chips: ${player1.chips} | P2 final chips: ${player2.chips}")
+
+        return player1.chips, player2.chips
 
 class KuhnPoker(SimpleGame):
     def __init__(self, player1_cards=[], player2_cards=[], seed = None):

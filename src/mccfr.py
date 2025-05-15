@@ -99,6 +99,9 @@ class MCCFR:
 
         infoset.increment_visited_count()
         strategy = infoset.get_strategy()
+  
+        for a in valid_action_indices:
+            infoset.strategy_sum[a] += strategy[a]
 
         if acting_player == traversing_player:
             action_utils = np.zeros(self.num_actions)
@@ -121,10 +124,12 @@ class MCCFR:
             
             util = self.external_cfr(game, next_history, traversing_player)
             
-            for a in valid_action_indices:
-                infoset.strategy_sum[a] += strategy[a]
-            
             return util
     
     def sample_action(self, strategy):
         return random.choices([i for i in range(self.num_actions)], weights = strategy, k = 1)[0]
+    
+    def choose_move(self, infoset_key, valid_action_indices):
+        infoset = self.get_infoset(infoset_key, valid_action_indices)
+        strategy = infoset.get_average_strategy()
+        return self.sample_action(strategy)
