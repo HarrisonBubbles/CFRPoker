@@ -174,7 +174,9 @@ class PocketPoker(SimpleGame):
         
         while players_acted < 2:
             valid_actions = self.valid_actions(history)
-            action = current_player.best_move(self.get_infoset_key(current_player_id, history), valid_actions)
+            infoset = self.get_infoset_key(current_player_id, history)
+            hand_strength = self.evaluate(current_player.hand, self.community_cards)
+            action = current_player.best_move(infoset, valid_actions, hand_strength)
             self.handle_action(current_player, action, verbose)
             history.append(action)
             
@@ -194,7 +196,7 @@ class PocketPoker(SimpleGame):
     def play_round(self, player1: Player, player2: Player, round: int, verbose=True):
         if verbose:
             print("\n" + "=" * 50)
-            print(f"Round {round} starting. P1: ${player1.chips} | P2: ${player2.chips}")
+            print(f"Round {round} starting. {player1.name}: ${player1.chips} | {player2.name}: ${player2.chips}")
             print("=" * 50)
 
         self.setup()
@@ -205,20 +207,20 @@ class PocketPoker(SimpleGame):
 
         if verbose:
             print(f"Community Cards: {Card.ints_to_pretty_str(self.community_cards)}")
-            print(f"P1 Cards: {Card.ints_to_pretty_str(self.player1_cards)}")
+            print(f"{player1.name} Cards: {Card.ints_to_pretty_str(self.player1_cards)}")
 
         history = self.betting_round(player1, player2, verbose)
 
         if verbose:
-            print(f"\nP2 Cards: {Card.ints_to_pretty_str(self.player2_cards)}")
+            print(f"{player2.name} Cards: {Card.ints_to_pretty_str(self.player2_cards)}")
 
         final_score = self.get_terminal_utility(history, 0)
 
         if verbose:
             if final_score > 0:
-                print(f"P1 wins ${final_score}.")
+                print(f"{player1.name} wins ${final_score}.")
             elif final_score < 0:
-                print(f"P2 wins ${-final_score}.")
+                print(f"{player2.name} wins ${-final_score}.")
             else:
                 print(f"Players tie.")
         
@@ -227,14 +229,19 @@ class PocketPoker(SimpleGame):
 
         
     def play_game(self, player1: Player, player2: Player, rounds: int = 10, verbose=True):
+        player1.reset_player()
+        player2.reset_player()
+        p1 = player1
+        p2 = player2
         for i in range(rounds):
-            if player1.chips <= 0 or player2.chips <= 0:
+            if p1.chips <= 0 or p2.chips <= 0:
                 break
 
-            self.play_round(player1, player2, i+1, verbose)
+            self.play_round(p1, p2, i+1, verbose)
+            p1, p2 = p2, p1 # switch turns
 
         if verbose:
-            print(f"Game over. P1 final chips: ${player1.chips} | P2 final chips: ${player2.chips}")
+            print(f"Game over. {player1.name} final chips: ${player1.chips} | {player2.name} final chips: ${player2.chips}")
 
         return player1.chips, player2.chips
 
