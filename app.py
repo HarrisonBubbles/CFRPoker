@@ -9,11 +9,13 @@ def create_app():
     
     app.register_blueprint(api_blueprint, url_prefix='/api')
     
-    @app.route('/health')
+    @app.route('/')
     def health_check():
         return {'status': 'healthy'}, 200
     
     return app
+
+app = create_app()
 
 if __name__ == '__main__':
     app = create_app()
