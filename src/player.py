@@ -130,8 +130,7 @@ class MCCFRPlayer(Player):
         self.__init__(self.name, self.model, self.initial_chips)
     
     def best_move(self, infoset_key, valid_actions, hand_strength):
-        valid_action_indices = [a.value for a in valid_actions]
-        return self.model.choose_move(infoset_key, valid_action_indices)
+        return self.model.choose_move(infoset_key)
     
 
 class EpsilonPlayer(MCCFRPlayer):

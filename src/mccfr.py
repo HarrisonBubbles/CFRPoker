@@ -129,7 +129,7 @@ class MCCFR:
     def sample_action(self, strategy):
         return random.choices([i for i in range(self.num_actions)], weights = strategy, k = 1)[0]
     
-    def choose_move(self, infoset_key, valid_action_indices):
-        infoset = self.get_infoset(infoset_key, valid_action_indices)
+    def choose_move(self, infoset_key):
+        infoset = self.nodes[infoset_key]
         strategy = infoset.get_average_strategy()
         return self.sample_action(strategy)
