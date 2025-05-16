@@ -1,6 +1,7 @@
-Flask==2.3.3
-Flask-CORS==4.0.0
+Flask==3.1.1
+Flask_Cors==4.0.0
+numpy==2.2.5
+treys==0.1.8
 gunicorn==21.2.0
 python-dotenv==1.0.0
 requests==2.31.0
-numpy==2.2.5
